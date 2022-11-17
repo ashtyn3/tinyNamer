@@ -1,0 +1,12 @@
+syntax = "proto3";
+package peerStore;
+
+option go_package = "../p2p";
+
+message ProtoPeer {
+  string Address = 1;
+  string ip = 2;
+  string port = 3;
+  string hash = 4;
+  bool developed = 5;
+}
