@@ -3,11 +3,11 @@ package p2p
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"log"
 	"net"
 	"strings"
 
 	"github.com/ashtyn3/tinynamer/msg"
+	"github.com/rs/zerolog/log"
 )
 
 type Peer struct {
@@ -39,6 +39,6 @@ func NewPeer(sock net.Conn) *Peer {
 func (p *Peer) Send(msg *msg.Message) {
 	_, err := p.Sock.Write(msg.Marshal())
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal().Err(err).Send()
 	}
 }
