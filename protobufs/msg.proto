@@ -1,0 +1,11 @@
+syntax = "proto3";
+package msg;
+
+option go_package = "../msg";
+
+message ProtoMessage {
+  string Address = 1;
+  string hash = 2;
+  string command = 3;
+  string data = 5;
+}

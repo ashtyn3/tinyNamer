@@ -10,5 +10,5 @@ run:
 	./build/namerd
 
 protobuf:
-	protoc protobufs/peer.proto --go_out=./protobufs
+	protoc protobufs/*.proto --go_out=./protobufs
 

@@ -10,7 +10,7 @@ import (
 
 type PeerStore struct {
 	peers  map[string]*Peer
-	buffer [][]byte
+	Buffer [][]byte
 }
 
 func NewStore() *PeerStore {
@@ -35,10 +35,8 @@ func (ps *PeerStore) Add(p *Peer) {
 	}
 }
 
-func (ps *PeerStore) Marshal() {
-	home, _ := os.UserHomeDir()
-	os.Mkdir(home+"/.tinyNamer", os.ModePerm)
-	ps.buffer = [][]byte{}
+func (ps *PeerStore) PartialMarshal() {
+	ps.Buffer = [][]byte{}
 
 	for _, p := range ps.peers {
 		pb := &ProtoPeer{
@@ -49,9 +47,16 @@ func (ps *PeerStore) Marshal() {
 			Developed: p.developed,
 		}
 		b, _ := proto.Marshal(pb)
-		ps.buffer = append(ps.buffer, b)
+		ps.Buffer = append(ps.Buffer, b)
 	}
-	os.WriteFile(home+"/.tinyNamer/peers.store", bytes.Join(ps.buffer, []byte("\n")), 0600)
+}
+func (ps *PeerStore) Marshal() {
+	home, _ := os.UserHomeDir()
+	os.Mkdir(home+"/.tinyNamer", os.ModePerm)
+
+	ps.PartialMarshal()
+
+	os.WriteFile(home+"/.tinyNamer/peers.store", bytes.Join(ps.Buffer, []byte("\n")), 0600)
 }
 
 func (ps *PeerStore) Unmarshal() {

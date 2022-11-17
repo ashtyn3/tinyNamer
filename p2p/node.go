@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
@@ -11,30 +12,32 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/ashtyn3/tinynamer/msg"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/protobuf/proto"
 )
 
 type Node struct {
-	keypair *ecdsa.PrivateKey
-	address string
-	peers   *PeerStore
-	mu      sync.Mutex
+	Keypair  *ecdsa.PrivateKey
+	Address  string
+	Peers    *PeerStore
+	Mu       sync.Mutex
+	Handlers *Handlers
 }
 
 func NewNode() *Node {
 	n := &Node{}
 	prv, _ := crypto.GenerateKey()
-	n.keypair = prv
-	n.mu = sync.Mutex{}
-	pub := crypto.FromECDSAPub(&n.keypair.PublicKey)
-	n.address = hex.EncodeToString(pub)
-	n.peers = NewStore()
+	n.Keypair = prv
+	n.Mu = sync.Mutex{}
+	pub := crypto.FromECDSAPub(&n.Keypair.PublicKey)
+	n.Address = hex.EncodeToString(pub)
+	n.Peers = NewStore()
+	n.Handlers = InitHandlers(n)
 
 	return n
 }
@@ -57,27 +60,42 @@ func (n *Node) listener() {
 		p := NewPeer(c)
 
 		go n.handle(p)
-		p.Send(msg.Msg(n.address, []byte("get_peers")))
+		p.Send(msg.Msg(n.Address, "get_peers", nil))
 	}
 }
 
 func (n *Node) handle(peer *Peer) {
 	reader := bufio.NewReader(peer.Sock)
+	lh := ""
 	for peer.Halt == false {
-		data, err := reader.ReadString('$')
+		data, err := reader.ReadBytes('$')
+		data = bytes.ReplaceAll(data, []byte("$"), []byte(""))
+		m := &msg.ProtoMessage{}
+		MarshalErr := proto.Unmarshal(data, m)
+		log.Error().Err(MarshalErr)
+		if m.Hash != "" && m.Hash != lh {
+			lh = m.Hash
+		} else if m.Hash == "" {
+		} else {
+			continue
+		}
+
 		switch err {
 		case nil:
 			{
-				frags := strings.Split(data, "\n")
 				if !peer.developed {
-					pub_key := frags[0]
+					pub_key := m.Address
 					peer.Address = pub_key
 
-					n.mu.Lock()
-					n.peers.Add(peer)
-					n.mu.Unlock()
+					n.Mu.Lock()
+					n.Peers.Add(peer)
+					n.Mu.Unlock()
+					n.Mu.Lock()
+					peer.developed = true
+					n.Mu.Unlock()
+					n.Handlers.List[m.Command](peer, m)
 				} else {
-					fmt.Printf("(%s:%s): %s", peer.Ip, peer.Port, data)
+					n.Handlers.List[m.Command](peer, m)
 				}
 			}
 		case io.EOF:
@@ -94,7 +112,7 @@ func (n *Node) outbound(con net.Conn) {
 	p := NewPeer(con)
 
 	go n.handle(p)
-	p.Send(msg.Msg(n.address, []byte("get_peers")))
+	p.Send(msg.Msg(n.Address, "get_peers", nil))
 	// n.peers.Add(p)
 }
 
@@ -123,12 +141,12 @@ func (n *Node) Run() {
 	go func() {
 		select {
 		case <-c:
-			n.peers.Marshal()
+			n.Peers.Marshal()
 			os.Exit(0)
 		}
 	}()
 
-	n.peers.Unmarshal()
+	n.Peers.Unmarshal()
 	n.Discover()
 	n.listener()
 }
