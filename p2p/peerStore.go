@@ -35,8 +35,8 @@ func (ps *PeerStore) Add(p *Peer) {
 	}
 }
 
-func (ps *PeerStore) PartialMarshal() {
-	ps.Buffer = [][]byte{}
+func (ps *PeerStore) PartialMarshal() [][]byte {
+	buffer := [][]byte{}
 
 	for _, p := range ps.peers {
 		pb := &ProtoPeer{
@@ -47,16 +47,15 @@ func (ps *PeerStore) PartialMarshal() {
 			Developed: p.developed,
 		}
 		b, _ := proto.Marshal(pb)
-		ps.Buffer = append(ps.Buffer, b)
+		buffer = append(buffer, b)
 	}
+	return buffer
 }
 func (ps *PeerStore) Marshal() {
 	home, _ := os.UserHomeDir()
 	os.Mkdir(home+"/.tinyNamer", os.ModePerm)
 
-	ps.PartialMarshal()
-
-	os.WriteFile(home+"/.tinyNamer/peers.store", bytes.Join(ps.Buffer, []byte("\n")), 0600)
+	os.WriteFile(home+"/.tinyNamer/peers.store", bytes.Join(ps.PartialMarshal(), []byte("\n")), 0600)
 }
 
 func (ps *PeerStore) Unmarshal() {

@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,11 +23,13 @@ import (
 )
 
 type Node struct {
-	Keypair  *ecdsa.PrivateKey
-	Address  string
-	Peers    *PeerStore
-	Mu       sync.Mutex
-	Handlers *Handlers
+	Keypair    *ecdsa.PrivateKey
+	Address    string
+	Ip         string
+	Peers      *PeerStore
+	Mu         sync.Mutex
+	Handlers   *Handlers
+	Listen_net net.Listener
 }
 
 func NewNode() *Node {
@@ -42,25 +45,16 @@ func NewNode() *Node {
 	return n
 }
 func (n *Node) listener() {
-	rand.Seed(time.Now().UnixNano())
-	port := 5770 + rand.Intn(7)
-	port_s := strconv.Itoa(port)
-	log.Info().Msg(fmt.Sprint("listening on ", port))
-	l, err := net.Listen("tcp", ":"+port_s)
-	if err != nil {
-		log.Fatal().Err(err).Send()
-	}
-	defer l.Close()
 
 	for {
-		c, err := l.Accept()
+		c, err := n.Listen_net.Accept()
 		if err != nil {
 			log.Fatal().Err(err).Send()
 		}
 		p := NewPeer(c)
 
 		go n.handle(p)
-		p.Send(msg.Msg(n.Address, "get_peers", nil))
+		p.Send(msg.Msg(n.Address, "get_peers", []byte(n.Ip)))
 	}
 }
 
@@ -84,8 +78,7 @@ func (n *Node) handle(peer *Peer) {
 		case nil:
 			{
 				if !peer.developed {
-					pub_key := m.Address
-					peer.Address = pub_key
+					peer.Address = m.Address
 
 					n.Mu.Lock()
 					n.Peers.Add(peer)
@@ -119,6 +112,9 @@ func (n *Node) outbound(con net.Conn) {
 func (n *Node) Discover() {
 	for i := 0; i < 7; i++ {
 		port := strconv.Itoa(5770 + i)
+		if strings.Contains(n.Ip, port) {
+			continue
+		}
 		con, err := net.Dial("tcp", ":"+port)
 		if err != nil {
 			continue
@@ -147,6 +143,20 @@ func (n *Node) Run() {
 	}()
 
 	n.Peers.Unmarshal()
+
+	rand.Seed(time.Now().UnixNano())
+	port := 5770 + rand.Intn(7)
+	port_s := strconv.Itoa(port)
+	log.Info().Msg(fmt.Sprint("listening on ", port))
+	l, err := net.Listen("tcp", ":"+port_s)
+	if err != nil {
+		log.Fatal().Err(err).Send()
+	}
+	n.Listen_net = l
+	defer n.Listen_net.Close()
+	n.Ip = l.Addr().String()
+	n.Address += ":" + n.Ip
+
 	n.Discover()
 	n.listener()
 }
