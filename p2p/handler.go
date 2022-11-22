@@ -39,7 +39,7 @@ func (h *Handlers) peers(p *Peer, m *msg.ProtoMessage) {
 			proto.Unmarshal(p, temp_p)
 			z := strings.SplitN(temp_p.Address, ":", 2)
 
-			if h.host.Peers.peers[temp_p.Address] != nil || temp_p.Address == h.host.Address {
+			if h.host.Peers.HasPeer(temp_p.Address) == true || temp_p.Address == h.host.Address {
 				continue
 			}
 
@@ -54,7 +54,7 @@ func (h *Handlers) peers(p *Peer, m *msg.ProtoMessage) {
 func (h *Handlers) get_peers(p *Peer, m *msg.ProtoMessage) {
 	h.host.Mu.Lock()
 
-	b := bytes.Join(h.host.Peers.PartialMarshal(), []byte("\r\r\n"))
+	b := []byte(h.host.Peers.Marshal())
 
 	p.Send(msg.Msg(h.host.Address, "peers", b))
 	h.host.Mu.Unlock()

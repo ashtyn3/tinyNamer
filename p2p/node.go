@@ -30,6 +30,7 @@ type Node struct {
 	Mu         sync.Mutex
 	Handlers   *Handlers
 	Listen_net net.Listener
+	BasePath   string
 }
 
 func NewNode() *Node {
@@ -39,7 +40,9 @@ func NewNode() *Node {
 	n.Mu = sync.Mutex{}
 	pub := crypto.FromECDSAPub(&n.Keypair.PublicKey)
 	n.Address = hex.EncodeToString(pub)
-	n.Peers = NewStore()
+	home, _ := os.UserHomeDir()
+	n.BasePath = home + "/.tinyNamer"
+	n.Peers = NewStore(n.BasePath, n.Address)
 	n.Handlers = InitHandlers(n)
 
 	return n
@@ -131,24 +134,22 @@ func (n *Node) Discover() {
 	// }
 }
 
-func (n *Node) Run() {
+func (n *Node) Run(port string) {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		select {
 		case <-c:
-			n.Peers.Marshal()
+			n.Peers.db.Close()
 			os.Exit(0)
 		}
 	}()
 
-	n.Peers.Unmarshal()
-
 	rand.Seed(time.Now().UnixNano())
-	port := 5770 + rand.Intn(7)
-	port_s := strconv.Itoa(port)
+	// port := 5770 + rand.Intn(7)
+	// port_s := strconv.Itoa(port)
 	log.Info().Msg(fmt.Sprint("listening on ", port))
-	l, err := net.Listen("tcp", ":"+port_s)
+	l, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}

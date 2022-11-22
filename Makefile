@@ -8,8 +8,10 @@ protobuf:
 
 build:
 	mkdir build
-	go build -o build/namerd ./cmd/namerd/main.go 
+	go build -o build/namerd ./cmd/main.go
 
 run:
 	./build/namerd
 
+docker:
+	docker build . --tag tinynamer
