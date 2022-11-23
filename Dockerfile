@@ -13,4 +13,4 @@ RUN echo $(ls $(go env GOPATH)/bin)
 COPY . .
 RUN make clean protobuf build
 
-CMD ["./build/namerd", "-p", "5771"]
+# CMD ["./build/namerd", "-p", "5771"]

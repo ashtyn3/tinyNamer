@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ashtyn3/tinynamer/discover"
 	"github.com/ashtyn3/tinynamer/p2p"
 	"github.com/fatih/color"
 	"github.com/rs/zerolog"
@@ -39,9 +40,17 @@ var rootCmd = &cobra.Command{
 			log_file, _ := os.Create(home + "/.tinyNamer/log")
 			log.Logger = log.Output(log_file)
 		}
-		n := p2p.NewNode()
+		n := p2p.NewNode(false)
 		port, _ := cmd.Flags().GetString("port")
 		n.Run(port)
+	},
+}
+
+var bootCmd = &cobra.Command{
+	Use:   "discovery",
+	Short: "Starts a discovery only node",
+	Run: func(cmd *cobra.Command, args []string) {
+		discover.Run()
 	},
 }
 
@@ -55,4 +64,6 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringP("port", "p", "5770", "The network port of the client.")
 	rootCmd.Flags().BoolP("log", "L", false, "Log to file")
+
+	rootCmd.AddCommand(bootCmd)
 }

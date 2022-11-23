@@ -6,10 +6,11 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/util"
 	"google.golang.org/protobuf/proto"
 )
 
-type PeerStore struct {
+type Store struct {
 	db   *leveldb.DB
 	path string
 	self string
@@ -17,11 +18,11 @@ type PeerStore struct {
 
 const PERM = 0777
 
-func NewStore(basePath string, self string) *PeerStore {
-	os.MkdirAll(basePath+"/peers.store", PERM)
+func NewStore(basePath string, self string) *Store {
+	os.MkdirAll(basePath+"/store", PERM)
 
-	store := &PeerStore{
-		path: basePath + "/peers.store",
+	store := &Store{
+		path: basePath + "/store",
 		self: self,
 	}
 	d, err := leveldb.OpenFile(store.path, nil)
@@ -55,19 +56,18 @@ func (p *ProtoPeer) ToPeer() *Peer {
 	}
 }
 
-func (ps *PeerStore) Add(p *Peer) {
+func (ps *Store) AddPeer(p *Peer) {
+	log.Info().Str("Address", p.Address).Msg("connected new peer")
 	b, _ := proto.Marshal(p.ToProtoPeer())
-	ps.db.Put([]byte(p.Ip), b, nil)
-	// if err != nil {
-	// 	log.Error().Err(err)
-	// }
+	err := ps.db.Put([]byte("tn://"+p.Address), b, nil)
+	if err != nil {
+		log.Error().Err(err).Send()
+	}
 }
-func (ps *PeerStore) Marshal() string {
-	iter := ps.db.NewIterator(nil, nil)
+func (ps *Store) MarshalPeers() string {
+	iter := ps.db.NewIterator(util.BytesPrefix([]byte("tn://")), nil)
 	buffer := []string{}
 	for iter.Next() {
-		// Remember that the contents of the returned slice should not be modified, and
-		// only valid until the next call to Next.
 		value := iter.Value()
 		pb := &ProtoPeer{}
 		proto.Unmarshal(value, pb)
@@ -80,8 +80,8 @@ func (ps *PeerStore) Marshal() string {
 	return strings.Join(buffer, ",")
 }
 
-func (ps *PeerStore) HasPeer(addr string) bool {
-	state, _ := ps.db.Has([]byte(addr), nil)
+func (ps *Store) HasPeer(addr string) bool {
+	state, _ := ps.db.Has([]byte("tn://"+addr), nil)
 
 	return state
 }

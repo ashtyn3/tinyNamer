@@ -26,14 +26,15 @@ type Node struct {
 	Keypair    *ecdsa.PrivateKey
 	Address    string
 	Ip         string
-	Peers      *PeerStore
+	Peers      *Store
 	Mu         sync.Mutex
 	Handlers   *Handlers
 	Listen_net net.Listener
 	BasePath   string
+	Discovery  bool
 }
 
-func NewNode() *Node {
+func NewNode(disc bool) *Node {
 	n := &Node{}
 	prv, _ := crypto.GenerateKey()
 	n.Keypair = prv
@@ -43,6 +44,7 @@ func NewNode() *Node {
 	home, _ := os.UserHomeDir()
 	n.BasePath = home + "/.tinyNamer"
 	n.Peers = NewStore(n.BasePath, n.Address)
+	n.Discovery = disc
 	n.Handlers = InitHandlers(n)
 
 	return n
@@ -84,14 +86,17 @@ func (n *Node) handle(peer *Peer) {
 					peer.Address = m.Address
 
 					n.Mu.Lock()
-					n.Peers.Add(peer)
+					n.Peers.AddPeer(peer)
 					n.Mu.Unlock()
 					n.Mu.Lock()
 					peer.developed = true
 					n.Mu.Unlock()
-					n.Handlers.List[m.Command](peer, m)
+					n.Handlers.List[m.Command](peer, m, n.Handlers)
 				} else {
-					n.Handlers.List[m.Command](peer, m)
+					if n.Handlers.List[m.Command] == nil {
+						peer.Send(msg.Msg(n.Address, "unknown", nil))
+					}
+					n.Handlers.List[m.Command](peer, m, n.Handlers)
 				}
 			}
 		case io.EOF:
@@ -104,7 +109,7 @@ func (n *Node) handle(peer *Peer) {
 	peer.Sock.Close()
 }
 
-func (n *Node) outbound(con net.Conn) {
+func (n *Node) Outbound(con net.Conn) {
 	p := NewPeer(con)
 
 	go n.handle(p)
@@ -122,7 +127,7 @@ func (n *Node) Discover() {
 		if err != nil {
 			continue
 		}
-		n.outbound(con)
+		n.Outbound(con)
 		break
 	}
 	// for _, p := range n.peers.peers {
