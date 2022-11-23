@@ -15,3 +15,4 @@ run:
 
 docker:
 	docker build . --tag tinynamer
+

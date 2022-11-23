@@ -1,14 +1,12 @@
 package p2p
 
 import (
-	"bytes"
 	"encoding/hex"
 	"net"
 	"strings"
 
 	"github.com/ashtyn3/tinynamer/msg"
 	"github.com/rs/zerolog/log"
-	"google.golang.org/protobuf/proto"
 )
 
 type Handlers struct {
@@ -29,17 +27,15 @@ func InitHandlers(n *Node) *Handlers {
 
 func (h *Handlers) peers(p *Peer, m *msg.ProtoMessage) {
 	// log.Error().Msg("Unimplemented")
-	str, _ := hex.DecodeString(m.Data)
-	peers_b := bytes.Split(str, []byte("\r\r\n"))
+	dec, _ := hex.DecodeString(m.Data)
+	peers_b := strings.Split(string(dec), ",")
 
 	// h.host.Mu.Lock()
 	for _, p := range peers_b {
 		if len(p) > 1 {
-			temp_p := &ProtoPeer{}
-			proto.Unmarshal(p, temp_p)
-			z := strings.SplitN(temp_p.Address, ":", 2)
+			z := strings.SplitN(p, ":", 2)
 
-			if h.host.Peers.HasPeer(temp_p.Address) == true || temp_p.Address == h.host.Address {
+			if h.host.Peers.HasPeer(p) == true || p == h.host.Address {
 				continue
 			}
 

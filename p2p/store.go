@@ -1,9 +1,8 @@
 package p2p
 
 import (
-	"bytes"
-	"encoding/hex"
 	"os"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -63,18 +62,20 @@ func (ps *PeerStore) Add(p *Peer) {
 }
 func (ps *PeerStore) Marshal() string {
 	iter := ps.db.NewIterator(nil, nil)
-	buffer := [][]byte{}
+	buffer := []string{}
 	for iter.Next() {
 		// Remember that the contents of the returned slice should not be modified, and
 		// only valid until the next call to Next.
 		value := iter.Value()
-		buffer = append(buffer, value)
+		pb := &ProtoPeer{}
+		proto.Unmarshal(value, pb)
+		buffer = append(buffer, pb.Address)
 	}
 	iter.Release()
 	err := iter.Error()
 	log.Error().Err(err)
 
-	return hex.EncodeToString(bytes.Join(buffer, []byte("\r\r\n")))
+	return strings.Join(buffer, ",")
 }
 
 func (ps *PeerStore) HasPeer(addr string) bool {
