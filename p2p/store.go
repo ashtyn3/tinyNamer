@@ -25,7 +25,9 @@ func NewStore(basePath string, self string) *PeerStore {
 		self: self,
 	}
 	d, err := leveldb.OpenFile(store.path, nil)
-	log.Error().Err(err)
+	if err != nil {
+		log.Fatal().Err(err).Send()
+	}
 	store.db = d
 
 	return store
