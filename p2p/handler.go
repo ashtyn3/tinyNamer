@@ -51,7 +51,9 @@ func (h *Handlers) peers(p *Peer, m *msg.ProtoMessage, _ *Handlers) {
 			}
 
 			c, err := net.Dial("tcp", z[1])
-			log.Error().Err(err)
+			if err != nil {
+				continue
+			}
 			h.Host.Outbound(c)
 		}
 	}
