@@ -2,12 +2,10 @@ package discover
 
 import (
 	"encoding/hex"
-	"net"
 	"strings"
 
 	"github.com/ashtyn3/tinynamer/msg"
 	"github.com/ashtyn3/tinynamer/p2p"
-	"github.com/rs/zerolog/log"
 )
 
 func peers(p *p2p.Peer, m *msg.ProtoMessage, h *p2p.Handlers) {
@@ -15,23 +13,28 @@ func peers(p *p2p.Peer, m *msg.ProtoMessage, h *p2p.Handlers) {
 	dec, _ := hex.DecodeString(m.Data)
 	peers_b := strings.Split(string(dec), ",")
 
-	// h.host.Mu.Lock()
-	for _, p := range peers_b {
-		if len(p) > 1 {
-			z := strings.SplitN(p, ":", 2)
-
-			if h.Host.Peers.HasPeer(p) == true || p == h.Host.Address {
+	h.Host.Mu.Lock()
+	for _, p_b := range peers_b {
+		if len(p_b) > 1 {
+			if h.Host.Peers.HasPeer(p_b) == true || p_b == h.Host.Address {
 				continue
 			}
+			peer := &p2p.Peer{
+				Address: p_b,
+				Ip:      strings.SplitN(p_b, ":", 2)[1],
+				Port:    p_b,
+				Hash:    "",
+				Sock:    nil,
+				Halt:    false,
+			}
 
-			c, err := net.Dial("tcp", z[1])
-			log.Error().Err(err)
-			h.Host.Outbound(c)
+			h.Host.Peers.AddPeer(peer)
 		}
 	}
-	p.Halt = true
+	p.Send(msg.Msg(h.Host.Address, "kill", []byte{}))
 	p.Sock.Close()
-	// h.host.Mu.Unlock()
+	p.Halt = true
+	h.Host.Mu.Unlock()
 }
 
 func get_peers(p *p2p.Peer, m *msg.ProtoMessage, h *p2p.Handlers) {

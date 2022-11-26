@@ -57,6 +57,9 @@ func (p *ProtoPeer) ToPeer() *Peer {
 }
 
 func (ps *Store) AddPeer(p *Peer) {
+	if p.Address == ps.self || ps.HasPeer(p.Address) {
+		return
+	}
 	log.Info().Str("Address", p.Address).Msg("connected new peer")
 	b, _ := proto.Marshal(p.ToProtoPeer())
 	err := ps.db.Put([]byte("tn://"+p.Address), b, nil)
