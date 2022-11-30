@@ -22,12 +22,10 @@ type Peer struct {
 
 func NewPeer(sock net.Conn) *Peer {
 	p := &Peer{}
-	addr := sock.RemoteAddr()
-	addrFrags := strings.Split(addr.String(), ":")
+	addr := sock.RemoteAddr().String()
 	p.Sock = sock
 	p.Halt = false
-	p.Ip = addrFrags[0]
-	p.Port = addrFrags[1]
+	p.Ip = strings.Split(addr, ":")[0]
 	p.developed = false
 	sha := sha256.New()
 	sha.Write([]byte(p.Address + p.Port))

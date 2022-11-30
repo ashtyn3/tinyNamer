@@ -83,7 +83,9 @@ func (n *Node) handle(peer *Peer) {
 		case nil:
 			{
 				if !peer.developed {
-					peer.Address = strings.Split(m.Address, "@")[0]
+					temp := strings.Split(m.Address, "@")
+					peer.Address = temp[0]
+					peer.Port = strings.Split(temp[1], ":")[1]
 
 					if peer.Address != "DISCOVERY" {
 						n.Mu.Lock()
@@ -176,9 +178,9 @@ func (n *Node) Run(port string) {
 	defer n.Listen_net.Close()
 	n.Ip = l.Addr().String()
 	if n.Discovery {
-		n.Address = "DISCOVERY@" + n.Ip
+		n.Address = "DISCOVERY@127.0.0.1:" + port
 	} else {
-		n.Address += "@" + n.Ip
+		n.Address += "@127.0.0.1:" + port
 	}
 	n.Peers = NewStore(n.BasePath, n.Address)
 

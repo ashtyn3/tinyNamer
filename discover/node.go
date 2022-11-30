@@ -20,9 +20,9 @@ func peers(p *p2p.Peer, m *msg.ProtoMessage, h *p2p.Handlers) {
 				continue
 			}
 			peer := &p2p.Peer{
-				Address: p_b,
+				Address: strings.Split(p_b, "@")[0],
 				Ip:      strings.Split(p_b, "@")[1],
-				Port:    p_b,
+				Port:    strings.Split(strings.Split(p_b, "@")[1], ":")[1],
 				Hash:    "",
 				Sock:    nil,
 				Halt:    false,

@@ -74,7 +74,7 @@ func (ps *Store) MarshalPeers() string {
 		value := iter.Value()
 		pb := &ProtoPeer{}
 		proto.Unmarshal(value, pb)
-		buffer = append(buffer, pb.Address)
+		buffer = append(buffer, pb.Address+"@"+pb.Ip+":"+pb.Port)
 	}
 	iter.Release()
 	err := iter.Error()
