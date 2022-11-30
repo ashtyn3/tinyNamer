@@ -21,7 +21,7 @@ func peers(p *p2p.Peer, m *msg.ProtoMessage, h *p2p.Handlers) {
 			}
 			peer := &p2p.Peer{
 				Address: p_b,
-				Ip:      strings.SplitN(p_b, ":", 2)[1],
+				Ip:      strings.Split(p_b, "@")[1],
 				Port:    p_b,
 				Hash:    "",
 				Sock:    nil,
@@ -48,7 +48,7 @@ func get_peers(p *p2p.Peer, m *msg.ProtoMessage, h *p2p.Handlers) {
 
 func Run() {
 	n := p2p.NewNode(true)
-	n.Address = "DISCOVERY:" + n.Ip
+	n.Address = "DISCOVERY@" + n.Ip
 	n.Handlers.AddMethod("get_peers", get_peers)
 	n.Handlers.AddMethod("peers", peers)
 

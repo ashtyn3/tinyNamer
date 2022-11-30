@@ -44,13 +44,13 @@ func (h *Handlers) peers(p *Peer, m *msg.ProtoMessage, _ *Handlers) {
 	// h.host.Mu.Lock()
 	for _, p := range peers_b {
 		if len(p) > 1 {
-			z := strings.SplitN(p, ":", 2)
+			// z := strings.Split(p, "@")
 
 			if h.Host.Peers.HasPeer(p) == true || p == h.Host.Address {
 				continue
 			}
 
-			c, err := net.Dial("tcp", z[1])
+			c, err := net.Dial("tcp", p)
 			if err != nil {
 				continue
 			}

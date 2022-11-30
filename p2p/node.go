@@ -24,6 +24,7 @@ import (
 type Node struct {
 	Keypair    *ecdsa.PrivateKey
 	Address    string
+	PublicKey  string
 	Ip         string
 	Peers      *Store
 	Mu         sync.Mutex
@@ -40,6 +41,7 @@ func NewNode(disc bool) *Node {
 	n.Mu = sync.Mutex{}
 	pub := crypto.FromECDSAPub(&n.Keypair.PublicKey)
 	n.Address = hex.EncodeToString(pub)
+	n.PublicKey = n.Address
 	home, _ := os.UserHomeDir()
 	n.BasePath = home + "/.tinyNamer"
 	n.Discovery = disc
@@ -81,9 +83,9 @@ func (n *Node) handle(peer *Peer) {
 		case nil:
 			{
 				if !peer.developed {
-					peer.Address = m.Address
+					peer.Address = strings.Split(m.Address, "@")[0]
 
-					if strings.Split(peer.Address, ":")[0] != "DISCOVERY" {
+					if peer.Address != "DISCOVERY" {
 						n.Mu.Lock()
 						n.Peers.AddPeer(peer)
 						n.Mu.Unlock()
@@ -141,7 +143,7 @@ func (n *Node) Discover() {
 	// }
 
 	// discovery node finder
-	disc_nodes := []string{"0.0.0.0:5779"}
+	disc_nodes := []string{"0.0.0.0:5779", "8.9.36.237:5779"}
 	for _, p := range disc_nodes {
 		con, err := net.Dial("tcp", p)
 		if err != nil {
@@ -174,9 +176,9 @@ func (n *Node) Run(port string) {
 	defer n.Listen_net.Close()
 	n.Ip = l.Addr().String()
 	if n.Discovery {
-		n.Address = "DISCOVERY:" + n.Ip
+		n.Address = "DISCOVERY@" + n.Ip
 	} else {
-		n.Address += ":" + n.Ip
+		n.Address += "@" + n.Ip
 	}
 	n.Peers = NewStore(n.BasePath, n.Address)
 
