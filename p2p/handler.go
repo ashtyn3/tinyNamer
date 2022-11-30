@@ -46,9 +46,16 @@ func (h *Handlers) peers(p *Peer, m *msg.ProtoMessage, _ *Handlers) {
 		if len(p) > 1 {
 			z := strings.Split(p, "@")
 
-			if h.Host.Peers.HasPeer(p) == true || p == h.Host.Address {
+			if h.Host.Peers.HasPeer(p) == true || p == h.Host.Address || z[0] == strings.Split(h.Host.Address, "@")[0] {
+				h.Host.Ip = z[1]
 				continue
 			}
+
+			temp_ip := strings.Split(z[1], ":")
+			if strings.Split(h.Host.Ip, ":")[0] == temp_ip[0] {
+				z[1] = "0.0.0.0:" + temp_ip[1]
+			}
+
 			c, err := net.Dial("tcp", z[1])
 			if err != nil {
 				continue
