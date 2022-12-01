@@ -26,6 +26,7 @@ type Node struct {
 	Address    string
 	PublicKey  string
 	Ip         string
+	host_ip    string
 	Peers      *Store
 	Mu         sync.Mutex
 	Handlers   *Handlers
