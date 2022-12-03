@@ -51,12 +51,12 @@ func (h *Handlers) peers(p *Peer, m *msg.ProtoMessage, _ *Handlers) {
 			}
 
 			if z[0] == strings.Split(h.Host.Address, "@")[0] {
-				h.Host.host_ip = z[1]
+				h.Host.Ip = z[1]
 			}
 
 			temp_ip := strings.Split(z[1], ":")
 
-			if strings.Split(h.Host.host_ip, ":")[0] == temp_ip[0] {
+			if strings.Split(h.Host.Ip, ":")[0] == temp_ip[0] {
 				z[1] = "0.0.0.0:" + temp_ip[1]
 			}
 
