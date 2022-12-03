@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -45,6 +46,7 @@ func NewNode(disc bool) *Node {
 	n.PublicKey = n.Address
 	home, _ := os.UserHomeDir()
 	n.BasePath = home + "/.tinyNamer"
+	n.Peers = NewStore(n.BasePath, n.Address)
 	n.Discovery = disc
 	n.Handlers = InitHandlers(n)
 
@@ -88,11 +90,17 @@ func (n *Node) handle(peer *Peer) {
 					peer.Address = temp[0]
 					peer.Port = strings.Split(temp[1], ":")[1]
 
+<<<<<<< HEAD
 					if peer.Address != "DISCOVERY" {
 						n.Mu.Lock()
 						n.Peers.AddPeer(peer)
 						n.Mu.Unlock()
 					}
+=======
+					n.Mu.Lock()
+					n.Peers.AddPeer(peer)
+					n.Mu.Unlock()
+>>>>>>> parent of dd78d42 (fix: peer discovery node closes connection)
 					n.Mu.Lock()
 					peer.developed = true
 					n.Mu.Unlock()
@@ -101,16 +109,7 @@ func (n *Node) handle(peer *Peer) {
 					if n.Handlers.List[m.Command] == nil {
 						peer.Send(msg.Msg(n.Address, "unknown", nil))
 					}
-					if m.Command == "kill" {
-						peer.Sock.Close()
-						log.Info().Str("discovery_address", peer.Address).Msgf("finished discovery")
-						return
-					}
 					n.Handlers.List[m.Command](peer, m, n.Handlers)
-					// if strings.Split(peer.Address, ":")[0] == "DISCOVERY" {
-					// 	peer.Sock.Close()
-					// 	log.Info().Str("discovery_address", peer.Address).Msg("finished discovery")
-					// }
 				}
 			}
 		case io.EOF:
@@ -120,7 +119,7 @@ func (n *Node) handle(peer *Peer) {
 			}
 		}
 	}
-	// peer.Sock.Close()
+	peer.Sock.Close()
 }
 
 func (n *Node) Outbound(con net.Conn) {
@@ -132,6 +131,7 @@ func (n *Node) Outbound(con net.Conn) {
 }
 
 func (n *Node) Discover() {
+<<<<<<< HEAD
 	// for i := 0; i < 7; i++ {
 	// 	port := strconv.Itoa(5770 + i)
 	// 	if strings.Contains(n.Ip, port) {
@@ -149,11 +149,27 @@ func (n *Node) Discover() {
 	disc_nodes := []string{"0.0.0.0:5779", "8.9.36.237:5779"}
 	for _, p := range disc_nodes {
 		con, err := net.Dial("tcp", p)
+=======
+	for i := 0; i < 7; i++ {
+		port := strconv.Itoa(5770 + i)
+		if strings.Contains(n.Ip, port) {
+			continue
+		}
+		con, err := net.Dial("tcp", ":"+port)
+>>>>>>> parent of dd78d42 (fix: peer discovery node closes connection)
 		if err != nil {
 			continue
 		}
 		n.Outbound(con)
+		break
 	}
+	// for _, p := range n.peers.peers {
+	// 	con, err := net.Dial("tcp", p.Ip+":"+p.Port)
+	// 	if err != nil {
+	// 		continue
+	// 	}
+	// 	n.outbound(con)
+	// }
 }
 
 func (n *Node) Run(port string) {
@@ -178,15 +194,17 @@ func (n *Node) Run(port string) {
 	n.Listen_net = l
 	defer n.Listen_net.Close()
 	n.Ip = l.Addr().String()
+<<<<<<< HEAD
 	if n.Discovery {
 		n.Address = "DISCOVERY@127.0.0.1:" + port
 	} else {
 		n.Address += "@127.0.0.1:" + port
 	}
 	n.Peers = NewStore(n.BasePath, n.Address)
+=======
+	n.Address += ":" + n.Ip
+>>>>>>> parent of dd78d42 (fix: peer discovery node closes connection)
 
-	if !n.Discovery {
-		n.Discover()
-	}
+	n.Discover()
 	n.listener()
 }
